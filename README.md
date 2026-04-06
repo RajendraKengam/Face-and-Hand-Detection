@@ -55,7 +55,3 @@ This application uses a pre-trained **Haar Cascade** model from OpenCV's library
 3.  In a loop, it reads frames from the webcam, converts them to grayscale, and performs face detection.
 4.  For each detected face, a blue rectangle is drawn on the original frame.
 5.  The processed frame is displayed in a window.
-
-## License
-
-This project is licensed under the MIT License. See the `LICENSE` file for more details.Your new text here 

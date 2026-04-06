@@ -91,7 +91,6 @@ def main():
         frame_timestamp_ms += 1 # Simple timestamp for video mode
 
         # Flip the frame horizontally for a later selfie-view display
-        # This also makes hand tracking logic easier
         frame = cv2.flip(frame, 1)
 
         # Convert the frame to grayscale for the face detection algorithm.
@@ -118,18 +117,26 @@ def main():
             frame = cv2.cvtColor(annotated_image, cv2.COLOR_RGB2BGR)
 
         # --- Finger Counting Logic ---
+        total_fingers_all_hands = 0
         if hand_results.hand_landmarks:
-            for hand_landmarks in hand_results.hand_landmarks:
+            for idx, hand_landmarks in enumerate(hand_results.hand_landmarks):
+                handedness = hand_results.handedness[idx][0].category_name
                 # Get landmark coordinates
                 landmarks = hand_landmarks
                 tip_ids = [4, 8, 12, 16, 20]  # Landmark indices for fingertips
                 fingers = []
 
-                # Thumb: Check if tip's x is to the left of the joint below it
-                if landmarks[tip_ids[0]].x < landmarks[tip_ids[0] - 1].x:
-                    fingers.append(1)
-                else:
-                    fingers.append(0)
+                # Thumb: Check based on handedness
+                if handedness == "Right":
+                    if landmarks[tip_ids[0]].x > landmarks[tip_ids[0] - 1].x:
+                        fingers.append(1)
+                    else:
+                        fingers.append(0)
+                else:  # Left
+                    if landmarks[tip_ids[0]].x < landmarks[tip_ids[0] - 1].x:
+                        fingers.append(1)
+                    else:
+                        fingers.append(0)
 
                 # Other 4 fingers: Check if tip's y is above the joint two landmarks below
                 for id in range(1, 5):
@@ -139,8 +146,9 @@ def main():
                         fingers.append(0)
                 
                 total_fingers = fingers.count(1)
-                # Display the finger count
-                cv2.putText(frame, f'Fingers: {total_fingers}', (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                total_fingers_all_hands += total_fingers
+            # Display the total finger count
+            cv2.putText(frame, f'Fingers: {total_fingers_all_hands}', (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
         # Display the resulting frame in a window.
         cv2.imshow('Face Detection', frame)
@@ -156,6 +164,11 @@ def main():
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             filename = os.path.join(output_dir, f'snapshot_{timestamp}.png')
             cv2.imwrite(filename, frame)
+
+
+
+
+
             print(f"Snapshot saved as {filename}")
 
     # When everything is done, release the capture and destroy all windows.
@@ -168,4 +181,3 @@ if __name__ == '__main__':
         main()
     except KeyboardInterrupt:
         print("\nProgram terminated by user.")
-        sys.exit(0)
